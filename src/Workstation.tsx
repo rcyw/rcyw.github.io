@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, ArrowRight, LampDesk, RotateCcw } from 'lucide-react';
 import App, { type DesktopEntry } from './App';
-import type { SceneTarget, WorkbenchController } from './scene/types';
+import type {
+  SceneAnchor,
+  SceneTarget,
+  WorkbenchController,
+} from './scene/types';
 import './workbench.css';
 
 const objects = [
@@ -23,6 +27,19 @@ const objects = [
     label: 'AI Infra',
     detail: 'The quiet machinery underneath.',
   },
+] as const;
+
+const sceneEntries = [
+  {
+    id: 'desktop',
+    number: '↗',
+    label: 'Enter desktop',
+    accessibleLabel: 'Enter desktop from the monitor',
+  },
+  ...objects.map((object) => ({
+    ...object,
+    accessibleLabel: `Explore ${object.label} object`,
+  })),
 ] as const;
 
 const objectLabels: Record<SceneTarget, string> = {
@@ -59,12 +76,12 @@ function StaticWorkbench() {
     >
       <defs>
         <linearGradient id="wb-wall" x2="0.8" y2="1">
-          <stop stopColor="#263d3b" />
-          <stop offset="1" stopColor="#101b1d" />
+          <stop stopColor="#242b35" />
+          <stop offset="1" stopColor="#11151c" />
         </linearGradient>
         <linearGradient id="wb-table" x2="0.2" y2="1">
-          <stop stopColor="#7d7967" />
-          <stop offset="1" stopColor="#373a32" />
+          <stop stopColor="#75665a" />
+          <stop offset="1" stopColor="#383332" />
         </linearGradient>
         <linearGradient id="wb-monitor" x2="1" y2="1">
           <stop stopColor="#41484a" />
@@ -162,10 +179,13 @@ export default function Workstation() {
   const [status, setStatus] = useState<'loading' | 'ready' | 'fallback'>(
     'loading',
   );
-  const [hovered, setHovered] = useState<SceneTarget | null>(null);
+  const [activeTarget, setActiveTarget] = useState<SceneTarget | null>(null);
+  const pointedTarget = useRef<SceneTarget | null>(null);
+  const focusedTarget = useRef<SceneTarget | null>(null);
   const [entering, setEntering] = useState(false);
   const reducedMotion = useReducedMotion();
   const canvasHost = useRef<HTMLDivElement>(null);
+  const hotspotButtons = useRef(new Map<string, HTMLButtonElement>());
   const controller = useRef<WorkbenchController | null>(null);
   const enterButton = useRef<HTMLButtonElement>(null);
   const transition = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -206,11 +226,21 @@ export default function Workstation() {
     let cancelled = false;
     let instance: WorkbenchController | null = null;
     setStatus('loading');
-    setHovered(null);
+    setActiveTarget(null);
+    pointedTarget.current = null;
+    focusedTarget.current = null;
     const fail = () => {
       if (cancelled) return;
       setStatus('fallback');
-      setHovered(null);
+      setActiveTarget(null);
+      pointedTarget.current = null;
+      focusedTarget.current = null;
+      if (
+        [...hotspotButtons.current.values()].includes(
+          document.activeElement as HTMLButtonElement,
+        )
+      )
+        enterButton.current?.focus({ preventScroll: true });
       controller.current?.dispose();
       controller.current = null;
     };
@@ -220,7 +250,10 @@ export default function Workstation() {
         try {
           instance = createWorkbench(host, {
             onSelect: (target) => selectHandler.current(target),
-            onHover: setHovered,
+            onHover: hoverObject,
+            onAnchors: (anchors) => {
+              if (!cancelled) positionHotspots(anchors);
+            },
             onReady: () => {
               if (!cancelled) setStatus('ready');
             },
@@ -260,6 +293,32 @@ export default function Workstation() {
     if (busy.current) controller.current?.reset();
     busy.current = false;
     setEntering(false);
+  }
+
+  function positionHotspots(anchors: SceneAnchor[]) {
+    // Camera motion updates the four markers without rendering the React tree.
+    for (const anchor of anchors) {
+      const button = hotspotButtons.current.get(anchor.target);
+      if (!button) continue;
+      button.style.left = `${anchor.x}%`;
+      button.style.top = `${anchor.y}%`;
+      button.hidden = !anchor.visible;
+      button.dataset.projected = 'true';
+    }
+  }
+
+  function hoverObject(target: SceneTarget | null) {
+    pointedTarget.current = target;
+    const next = target ?? focusedTarget.current;
+    setActiveTarget(next);
+    controller.current?.setHighlight(next);
+  }
+
+  function focusObject(target: SceneTarget | null) {
+    focusedTarget.current = target;
+    const next = target ?? pointedTarget.current;
+    setActiveTarget(next);
+    controller.current?.setHighlight(next);
   }
 
   function enter(target: SceneTarget = 'desktop', directly = false) {
@@ -326,15 +385,6 @@ export default function Workstation() {
           >
             Skip to the desktop
           </a>
-          <div
-            className="wb-fallback"
-            aria-hidden="true"
-            hidden={status === 'ready'}
-          >
-            <StaticWorkbench />
-          </div>
-          <div className="wb-canvas" ref={canvasHost} aria-hidden="true" />
-          <div className="wb-vignette" aria-hidden="true" />
           <header className="wb-header">
             <a
               className="wb-brand"
@@ -345,14 +395,16 @@ export default function Workstation() {
                 returnToWorkbench();
               }}
             >
-              <span className="wb-brand-mark">01</span>
+              <span className="wb-brand-mark" aria-hidden="true">
+                R
+              </span>
               <span>
                 <strong>rcyw</strong>
-                <small>curiosity desk</small>
+                <small>after hours</small>
               </span>
             </a>
             <div className="wb-header-actions">
-              <span className="wb-room-label">PERSONAL WORKSPACE</span>
+              <span className="wb-room-label">A PERSONAL RESEARCH DESK</span>
               <button
                 className="wb-enter"
                 type="button"
@@ -368,7 +420,7 @@ export default function Workstation() {
           <section className="wb-intro" aria-labelledby="workbench-heading">
             <p className="wb-kicker">
               <span aria-hidden="true" />
-              WAYNE / RCYW
+              WAYNE / RCYW · AFTER HOURS
             </p>
             <h1 id="workbench-heading">
               A small desk.
@@ -376,28 +428,72 @@ export default function Workstation() {
               <span>A lot of questions.</span>
             </h1>
             <p className="wb-intro-copy">
-              AI, agents, and the systems underneath.
+              Agents, sandboxes, and the systems underneath.
               <br />
-              Pick something up. Follow a thread.
+              Pull up a chair. Follow a question.
             </p>
           </section>
-          {status === 'loading' && (
-            <p className="wb-scene-status" role="status">
-              Setting the desk…
-            </p>
-          )}
-          {status === 'fallback' && (
-            <p className="wb-scene-status" role="status">
-              A quieter view. The whole desk is still open.
-            </p>
-          )}
-          <div className="wb-hover-label" aria-hidden="true">
-            {hovered ? (
-              <>
-                <ArrowRight size={14} />
-                {objectLabels[hovered]}
-              </>
-            ) : null}
+          <div className="wb-stage">
+            <div
+              className="wb-fallback"
+              aria-hidden="true"
+              hidden={status === 'ready'}
+            >
+              <StaticWorkbench />
+            </div>
+            <div className="wb-canvas" ref={canvasHost} aria-hidden="true" />
+            <div className="wb-vignette" aria-hidden="true" />
+            <div
+              className="wb-hotspots"
+              role="group"
+              aria-label="Interactive desk objects"
+              hidden={status !== 'ready' || entering}
+            >
+              {sceneEntries.map((object) => (
+                <button
+                  key={object.id}
+                  ref={(button) => {
+                    if (button) {
+                      hotspotButtons.current.set(object.id, button);
+                      if (!button.dataset.projected) button.hidden = true;
+                    } else hotspotButtons.current.delete(object.id);
+                  }}
+                  className="wb-hotspot"
+                  type="button"
+                  data-scene-target={object.id}
+                  data-target={object.id}
+                  data-active={activeTarget === object.id}
+                  aria-label={object.accessibleLabel}
+                  disabled={entering}
+                  onClick={() => enter(object.id)}
+                  onPointerEnter={() => hoverObject(object.id)}
+                  onPointerLeave={() => hoverObject(null)}
+                  onFocus={() => focusObject(object.id)}
+                  onBlur={() => focusObject(null)}
+                >
+                  <span className="wb-hotspot-number">{object.number}</span>
+                  <span className="wb-hotspot-label">{object.label}</span>
+                </button>
+              ))}
+            </div>
+            {status === 'loading' && (
+              <p className="wb-scene-status" role="status">
+                Setting the desk…
+              </p>
+            )}
+            {status === 'fallback' && (
+              <p className="wb-scene-status" role="status">
+                A quieter view. The whole desk is still open.
+              </p>
+            )}
+            <div className="wb-hover-label" aria-hidden="true">
+              {activeTarget ? (
+                <>
+                  <ArrowRight size={14} />
+                  {objectLabels[activeTarget]}
+                </>
+              ) : null}
+            </div>
           </div>
           <div className="wb-bottom">
             <nav className="wb-object-nav" aria-label="Explore interests">
@@ -405,16 +501,15 @@ export default function Workstation() {
                 <button
                   type="button"
                   className="wb-object"
+                  data-active={activeTarget === object.id}
                   key={object.id}
                   aria-label={object.label}
                   disabled={entering}
                   onClick={() => enter(object.id)}
-                  onPointerEnter={() =>
-                    controller.current?.setHighlight(object.id)
-                  }
-                  onPointerLeave={() => controller.current?.setHighlight(null)}
-                  onFocus={() => controller.current?.setHighlight(object.id)}
-                  onBlur={() => controller.current?.setHighlight(null)}
+                  onPointerEnter={() => hoverObject(object.id)}
+                  onPointerLeave={() => hoverObject(null)}
+                  onFocus={() => focusObject(object.id)}
+                  onBlur={() => focusObject(null)}
                 >
                   <span className="wb-object-number">{object.number}</span>
                   <span className="wb-object-copy">
@@ -428,7 +523,7 @@ export default function Workstation() {
             <footer className="wb-footline">
               <p className="wb-instructions">
                 {status === 'ready'
-                  ? 'Drag gently to look around. Click an object to explore.'
+                  ? 'Look around. Choose a numbered object. Follow a question.'
                   : 'Choose a thread, or step into the desktop.'}
               </p>
               <div className="wb-controls">

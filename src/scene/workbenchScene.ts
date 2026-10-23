@@ -57,7 +57,7 @@ export function createWorkbench(
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.12;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.needsUpdate = true;
   const canvas = renderer.domElement;
@@ -69,8 +69,8 @@ export function createWorkbench(
   host.append(canvas);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#263530');
-  const fog = new THREE.Fog('#263530', 23, 70);
+  scene.background = new THREE.Color('#17212e');
+  const fog = new THREE.Fog('#17212e', 23, 70);
   scene.fog = fog;
   let models: WorkbenchModels;
   try {
@@ -84,16 +84,17 @@ export function createWorkbench(
     throw error;
   }
 
-  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 120);
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 120);
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
-  const homeLook = new THREE.Vector3(0, 0.65, 0);
+  const homeLook = new THREE.Vector3(-0.12, 0.9, 0.16);
   const look = homeLook.clone();
-  const homeYaw = 0.43;
-  const homePolar = 1.09;
+  let homeYaw = 0.35;
+  let homePolar = 1.23;
   let yaw = homeYaw;
   let polar = homePolar;
-  let radius = 14;
+  let radius = 9.6;
+  let layout: 'desktop' | 'medium' | 'mobile' | null = null;
   let disposed = false;
   let failed = false;
   let ready = false;
@@ -151,6 +152,24 @@ export function createWorkbench(
       fail();
       return;
     }
+    const projected = new THREE.Vector3();
+    options.onAnchors(
+      models.anchors.map(({ target, position }) => {
+        projected.copy(position).project(camera);
+        return {
+          target,
+          x: THREE.MathUtils.clamp((projected.x * 0.5 + 0.5) * 100, 6, 94),
+          y: THREE.MathUtils.clamp((-projected.y * 0.5 + 0.5) * 100, 8, 92),
+          visible:
+            !move &&
+            !complete &&
+            projected.z > -1 &&
+            projected.z < 1 &&
+            Math.abs(projected.x) < 1.1 &&
+            Math.abs(projected.y) < 1.1,
+        };
+      }),
+    );
     if (!ready) {
       ready = true;
       options.onReady();
@@ -167,10 +186,28 @@ export function createWorkbench(
     camera.aspect = width / height;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setSize(width, height, false);
-    // Fit the complete desk on portrait screens instead of cropping its links.
-    const horizontalFit =
-      6.1 / (Math.tan(THREE.MathUtils.degToRad(21)) * camera.aspect);
-    radius = Math.max(14, horizontalFit);
+    const nextLayout =
+      width <= 600 ? 'mobile' : width <= 1100 ? 'medium' : 'desktop';
+    if (nextLayout !== layout) {
+      layout = nextLayout;
+      homeYaw = layout === 'mobile' ? 0.17 : layout === 'medium' ? 0.29 : 0.35;
+      homePolar =
+        layout === 'mobile' ? 1.14 : layout === 'medium' ? 1.18 : 1.23;
+      homeLook.set(
+        layout === 'mobile' ? -0.18 : -0.12,
+        layout === 'mobile' ? 0.82 : 0.9,
+        layout === 'mobile' ? 0.25 : 0.16,
+      );
+      yaw = homeYaw;
+      polar = homePolar;
+    }
+    camera.fov = layout === 'mobile' ? 45 : layout === 'medium' ? 38 : 35;
+    // Portrait frames fit the computer and three objects, not the furniture.
+    // The desk edge, legs, and distant window may leave the frame.
+    const mainObjectsFit =
+      4.22 /
+      (Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect);
+    radius = Math.max(layout === 'mobile' ? 10.4 : 9.6, mainObjectsFit);
     camera.far = Math.max(120, radius * 3);
     camera.updateProjectionMatrix();
     fog.near = radius * 1.65;
@@ -180,7 +217,7 @@ export function createWorkbench(
   }
 
   function highlight() {
-    models.setHighlight(pointerTarget ?? controlTarget);
+    models.setHighlight(controlTarget ?? pointerTarget);
     requestRender();
   }
 
@@ -230,13 +267,13 @@ export function createWorkbench(
       canvas.style.cursor = 'grabbing';
       yaw = THREE.MathUtils.clamp(
         drag.yaw - dx * 0.0024,
-        homeYaw - 0.32,
-        homeYaw + 0.32,
+        homeYaw - (layout === 'mobile' ? 0.22 : 0.28),
+        homeYaw + (layout === 'mobile' ? 0.22 : 0.28),
       );
       polar = THREE.MathUtils.clamp(
         drag.polar - dy * 0.0018,
-        homePolar - 0.16,
-        homePolar + 0.12,
+        homePolar - 0.12,
+        homePolar + 0.1,
       );
       updateCamera();
       requestRender();

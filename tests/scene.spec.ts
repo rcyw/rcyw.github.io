@@ -26,6 +26,35 @@ const interests = (page: Page) =>
     name: 'Explore interests',
     exact: true,
   });
+const interactiveObjects = (page: Page) =>
+  workbench(page).getByRole('group', {
+    name: 'Interactive desk objects',
+    exact: true,
+  });
+const sceneObjects = [
+  {
+    target: 'desktop',
+    label: 'Enter desktop from the monitor',
+    topic: null,
+  },
+  {
+    target: 'agents',
+    label: 'Explore AI / Agent object',
+    topic: 'AI / Agent',
+  },
+  {
+    target: 'sandbox',
+    label: 'Explore Agent Sandbox object',
+    topic: 'Agent Sandbox',
+  },
+  {
+    target: 'infra',
+    label: 'Explore AI Infra object',
+    topic: 'AI Infra',
+  },
+] as const;
+const projectedObject = (page: Page, label: string) =>
+  interactiveObjects(page).getByRole('button', { name: label, exact: true });
 
 async function expectWorkbench(page: Page) {
   await expect(workbench(page)).toBeVisible();
@@ -69,6 +98,24 @@ async function expectFocusInside(control: Locator) {
       ),
     )
     .toBe(true);
+}
+
+async function expectQuietMarkers(page: Page) {
+  for (const object of sceneObjects) {
+    const marker = projectedObject(page, object.label);
+    await expect(marker).toHaveCSS('opacity', '0');
+    await expect(marker).toHaveCSS('pointer-events', 'none');
+  }
+}
+
+async function focusWithKeyboard(page: Page, control: Locator) {
+  await expect(control).toBeVisible();
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    await page.keyboard.press('Tab');
+    if (await control.evaluate((element) => element === document.activeElement))
+      return;
+  }
+  await expect(control).toBeFocused();
 }
 
 async function expectAccessible(page: Page, context: string) {
@@ -165,6 +212,67 @@ test('each workbench interest opens its corresponding curiosity drawer', async (
   expect(contents.size, 'Each scene interest must open distinct content.').toBe(
     3,
   );
+});
+
+test('object markers stay quiet for pointers and reveal only the keyboard-focused object', async ({
+  page,
+}, info) => {
+  await page.goto('/#workbench');
+  await expectWorkbench(page);
+  await expectSceneSettled(page);
+  const status = await workbench(page).getAttribute('data-scene-status');
+  info.annotations.push({ type: 'scene-status', description: status! });
+  if (status === 'fallback') {
+    await expect(interactiveObjects(page)).toBeHidden();
+    return;
+  }
+  for (const object of sceneObjects) {
+    await expectSceneSettled(page);
+    await expectQuietMarkers(page);
+    const marker = projectedObject(page, object.label);
+    await expect(marker).toHaveAttribute('data-scene-target', object.target);
+    await focusWithKeyboard(page, marker);
+    await expect(marker).toHaveCSS('opacity', '1');
+    await expectWithinWidth(marker, page.viewportSize()!.width);
+    for (const other of sceneObjects.filter(
+      (candidate) => candidate.target !== object.target,
+    ))
+      await expect(projectedObject(page, other.label)).toHaveCSS(
+        'opacity',
+        '0',
+      );
+    if (object.topic)
+      await expect(
+        interests(page).getByRole('button', {
+          name: object.topic,
+          exact: true,
+        }),
+      ).toHaveAttribute('data-active', 'true');
+    await marker.press('Enter');
+    await expectDesktop(page);
+    if (object.topic)
+      await expect(topicButton(page, object.topic)).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    else
+      await expect(
+        dock(page).getByRole('button', { name: 'About', exact: true }),
+      ).toHaveAttribute('aria-pressed', 'true');
+    await backToWorkbench(page).focus();
+    await backToWorkbench(page).press('Enter');
+    await expectWorkbench(page);
+  }
+  await expectSceneSettled(page);
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    const marker = projectedObject(page, sceneObjects[0].label);
+    await focusWithKeyboard(page, marker);
+    await expect(marker).toHaveCSS('opacity', '1');
+    await expectWithinWidth(marker, width);
+    await enterDesktop(page).focus();
+    await expectQuietMarkers(page);
+  }
 });
 
 test('hash navigation survives refresh and browser Back and Forward', async ({
@@ -286,8 +394,10 @@ test('320px and 390px workbench layouts keep controls reachable and allow touch 
     await expectWorkbench(page);
     await expectSceneSettled(page);
     await expectNoHorizontalOverflow(page);
-    for (const control of await workbench(page).getByRole('button').all())
+    for (const control of await workbench(page).getByRole('button').all()) {
+      if (await control.getAttribute('data-scene-target')) continue;
       await expectWithinWidth(control, width);
+    }
     const path = info.outputPath(`workbench-${width}.png`);
     await page.screenshot({ path, fullPage: true, animations: 'disabled' });
     await info.attach(`workbench-${width}`, { path, contentType: 'image/png' });
@@ -326,6 +436,7 @@ test('unavailable WebGL provides an accessible fallback that still enters and re
     'data-scene-status',
     'fallback',
   );
+  await expect(interactiveObjects(page)).toBeHidden();
   for (const name of ['Toggle desk lamp', 'Reset view'])
     await expect(
       workbench(page).getByRole('button', { name, exact: true }),

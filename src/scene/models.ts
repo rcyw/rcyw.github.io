@@ -1,21 +1,22 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import type { SceneTarget } from './types';
+import type { SceneAnchor, SceneTarget } from './types';
 
 export interface WorkbenchModels {
   root: THREE.Group;
   pickables: THREE.Object3D[];
   screenCenter: THREE.Vector3;
+  anchors: { target: SceneAnchor['target']; position: THREE.Vector3 }[];
   setLamp(on: boolean): void;
   setHighlight(target: SceneTarget | null): void;
 }
 
 const palette = {
-  graphite: '#292d2d',
-  edge: '#414747',
-  rubber: '#151b1b',
-  ivory: '#d9d9c9',
-  mint: '#a7cbb8',
+  graphite: '#252930',
+  edge: '#464c55',
+  rubber: '#151a21',
+  ivory: '#e4e2da',
+  mint: '#aec2c9',
   amber: '#f0be75',
 };
 
@@ -68,7 +69,7 @@ function cable(parent: THREE.Object3D, points: number[][], thickness = 0.014) {
   );
   const mesh = new THREE.Mesh(
     new THREE.TubeGeometry(curve, 30, thickness, 6, false),
-    material('#161e1b', 0.92),
+    material('#171d25', 0.92),
   );
   mesh.castShadow = true;
   parent.add(mesh);
@@ -97,8 +98,8 @@ function label(
   width: number,
   height: number,
   position: [number, number, number],
-  color = '#ced7c7',
-  background = '#262f2c',
+  color = '#dde2e5',
+  background = '#242b35',
 ) {
   const map = texture(512, 96, (context) => {
     context.fillStyle = background;
@@ -120,14 +121,14 @@ function label(
 
 function desktopTexture() {
   return texture(1024, 768, (context) => {
-    context.fillStyle = '#5b6968';
+    context.fillStyle = '#7d878e';
     context.fillRect(0, 0, 1024, 768);
-    context.fillStyle = '#8d9890';
+    context.fillStyle = '#a7afb2';
     for (let x = 1; x < 1024; x += 8)
       for (let y = 1; y < 768; y += 8) context.fillRect(x, y, 1, 1);
-    context.fillStyle = '#c8ccc2';
+    context.fillStyle = '#d2d5d3';
     context.fillRect(0, 0, 1024, 34);
-    context.fillStyle = '#1d2925';
+    context.fillStyle = '#28313b';
     context.font = 'bold 17px monospace';
     context.fillText('◆  Workspace   /   Wayne’s desk', 18, 23);
     context.fillText('rcyw', 930, 23);
@@ -139,62 +140,63 @@ function desktopTexture() {
       h: number,
       title: string,
     ) => {
-      context.fillStyle = '#18231f';
+      context.fillStyle = '#20262d';
       context.fillRect(x + 6, y + 7, w, h);
-      context.fillStyle = '#c5cabf';
+      context.fillStyle = '#d3d7d6';
       context.fillRect(x, y, w, h);
-      context.strokeStyle = '#17221e';
+      context.strokeStyle = '#26313a';
       context.lineWidth = 3;
       context.strokeRect(x, y, w, h);
-      context.fillStyle = '#202b26';
+      context.fillStyle = '#2a333d';
       context.fillRect(x + 3, y + 3, w - 6, 29);
-      context.fillStyle = '#e9ecdd';
+      context.fillStyle = '#edf0ec';
       context.font = '16px monospace';
       context.fillText(title, x + 13, y + 24);
-      context.fillStyle = '#f0f0e3';
+      context.fillStyle = '#f5f4eb';
       context.fillRect(x + 11, y + 44, w - 22, h - 58);
     };
     frame(77, 139, 619, 451, 'about.txt');
-    context.fillStyle = '#5b6d60';
+    context.fillStyle = '#66727d';
     context.font = '16px monospace';
     context.fillText('Hi, I’m Wayne. Also rcyw.', 114, 222);
-    context.fillStyle = '#27382f';
+    context.fillStyle = '#2b3640';
     context.font = 'bold 47px sans-serif';
     context.fillText('A small desk.', 110, 303);
-    context.fillStyle = '#61765e';
+    context.fillStyle = '#6c7b86';
     context.fillText('A lot of questions.', 110, 357);
-    context.fillStyle = '#384c3e';
+    context.fillStyle = '#455360';
     context.font = '19px sans-serif';
     context.fillText('AI / Agent · Agent Sandbox · AI Infra', 112, 419);
     context.font = '16px monospace';
     context.fillText('There is another layer to explore.', 112, 468);
-    context.fillStyle = '#c5cfbd';
-    context.fillRect(112, 505, 260, 37);
-    context.strokeStyle = '#3e5143';
-    context.strokeRect(112, 505, 260, 37);
-    context.fillStyle = '#2b4032';
-    context.fillText('Open the desk  →', 132, 529);
+    context.fillStyle = '#d5dcd9';
+    context.fillRect(112, 499, 340, 47);
+    context.strokeStyle = '#52606b';
+    context.strokeRect(112, 499, 340, 47);
+    context.fillStyle = '#293844';
+    context.font = '22px monospace';
+    context.fillText('ENTER DESKTOP  →', 132, 531);
     frame(725, 220, 222, 226, 'questions.txt');
-    context.fillStyle = '#e5dfb6';
+    context.fillStyle = '#e7e1c6';
     context.fillRect(736, 263, 200, 166);
-    context.fillStyle = '#3c4a32';
+    context.fillStyle = '#424b51';
     context.font = '22px sans-serif';
     context.fillText('What should an', 751, 318);
     context.fillText('agent remember?', 751, 348);
     context.font = '14px monospace';
     context.fillText('Still thinking.', 751, 400);
-    context.fillStyle = '#b6c0b1';
+    context.fillStyle = '#c5ccca';
     context.fillRect(935, 55, 70, 123);
-    context.strokeStyle = '#26372c';
+    context.strokeStyle = '#35424e';
     context.strokeRect(935, 55, 70, 123);
-    context.fillStyle = '#283b2f';
+    context.fillStyle = '#374651';
     context.font = '16px monospace';
     context.fillText('01', 960, 91);
     context.font = '12px monospace';
     context.fillText('rcyw', 950, 116);
     context.fillRect(949, 137, 42, 25);
     // Subtle phosphor lines are baked into the screen, not a moving shader.
-    context.fillStyle = 'rgba(10, 30, 22, 0.05)';
+    context.fillStyle = 'rgba(22, 30, 42, 0.04)';
     for (let y = 0; y < 768; y += 3) context.fillRect(0, y, 1024, 1);
   });
 }
@@ -206,11 +208,11 @@ function deskTexture() {
     return (seed - 1) / 2147483646;
   };
   const map = texture(1024, 1024, (context) => {
-    context.fillStyle = '#777563';
+    context.fillStyle = '#78736f';
     context.fillRect(0, 0, 1024, 1024);
     for (let i = 0; i < 1600; i++) {
       const y = random() * 1024;
-      context.strokeStyle = `rgba(${random() > 0.5 ? '44,47,36' : '191,176,139'},${random() * 0.14})`;
+      context.strokeStyle = `rgba(${random() > 0.5 ? '43,43,46' : '183,174,161'},${random() * 0.09})`;
       context.lineWidth = random() * 1.5 + 0.2;
       context.beginPath();
       context.moveTo(0, y);
@@ -231,7 +233,7 @@ export function buildModels(): WorkbenchModels {
   const edges = material(palette.edge, 0.58, 0.2);
   const rubber = material(palette.rubber, 0.92);
   const ivory = material(palette.ivory, 0.75);
-  const metal = material('#65736b', 0.37, 0.75);
+  const metal = material('#7e8792', 0.37, 0.75);
   const mint = material(palette.mint, 0.45, 0.22);
 
   function interactive(group: THREE.Object3D, target: SceneTarget) {
@@ -260,21 +262,21 @@ export function buildModels(): WorkbenchModels {
   }
 
   // A real room gives the desk a horizon, reflected color, and a sense of scale.
-  const wall = material('#363f3e', 0.98);
+  const wall = material('#232c3a', 0.98);
   box(root, [27, 12, 0.25], [0, 4.7, -5.3], wall, 0);
   const windowGroup = new THREE.Group();
   windowGroup.position.set(1.5, 3.1, -5.03);
   root.add(windowGroup);
-  box(windowGroup, [6.2, 3.8, 0.16], [0, 0, 0], material('#182723'), 0.02);
+  box(windowGroup, [6.2, 3.8, 0.16], [0, 0, 0], material('#17212e'), 0.02);
   const night = new THREE.MeshStandardMaterial({
-    color: '#243c3b',
-    emissive: '#203a3d',
-    emissiveIntensity: 0.32,
+    color: '#203044',
+    emissive: '#233b58',
+    emissiveIntensity: 0.18,
     roughness: 0.36,
   });
   box(windowGroup, [5.92, 3.52, 0.03], [0, 0, 0.1], night, 0);
-  const building = material('#152b29', 0.95);
-  const cityLight = new THREE.MeshBasicMaterial({ color: '#b6bc98' });
+  const building = material('#141f2e', 0.95);
+  const cityLight = new THREE.MeshBasicMaterial({ color: '#929eac' });
   const cityAmber = new THREE.MeshBasicMaterial({ color: '#b88e56' });
   for (let i = 0; i < 12; i++) {
     const width = 0.28 + ((i * 17) % 5) * 0.07;
@@ -303,7 +305,7 @@ export function buildModels(): WorkbenchModels {
   box(windowGroup, [6, 0.07, 0.12], [0, 0.42, 0.2], edges, 0);
   box(windowGroup, [6.45, 0.12, 0.38], [0, -1.95, 0.1], edges, 0.015);
 
-  const deskSurface = material('#a6a48c', 0.87);
+  const deskSurface = material('#a39f9d', 0.89);
   deskSurface.map = deskTexture();
   box(root, [11.4, 0.25, 6.1], [0, -0.15, 0], deskSurface, 0.065);
   box(root, [11.25, 0.055, 0.045], [0, -0.17, 3.04], metal, 0.008);
@@ -317,7 +319,7 @@ export function buildModels(): WorkbenchModels {
     root,
     [7.45, 0.018, 3.32],
     [-0.1, -0.01, 0.45],
-    material('#45534c', 1),
+    material('#343d49', 1),
     0.08,
   );
 
@@ -327,7 +329,13 @@ export function buildModels(): WorkbenchModels {
   box(monitor, [1.19, 0.09, 0.88], [0, 0.045, 0], dark, 0.045);
   cylinder(monitor, 0.22, 0.36, [0, 0.22, -0.06], edges, 0.15);
   box(monitor, [2.32, 1.93, 1.02], [0, 1.34, -0.06], dark, 0.09);
-  box(monitor, [2.12, 1.69, 0.065], [0, 1.39, 0.475], rubber, 0.05);
+  box(
+    monitor,
+    [2.12, 1.69, 0.065],
+    [0, 1.39, 0.475],
+    material('#535e6a', 0.66, 0.08),
+    0.05,
+  );
   const screen = new THREE.Mesh(
     new RoundedBoxGeometry(1.86, 1.395, 0.038, 3, 0.05),
     new THREE.MeshBasicMaterial({ map: desktopTexture(), toneMapped: false }),
@@ -340,8 +348,17 @@ export function buildModels(): WorkbenchModels {
     0.32,
     0.065,
     [-0.77, 0.479, 0.49],
-    '#d4c5a8',
-    '#292d2d',
+    '#cbc9c5',
+    '#252930',
+  );
+  label(
+    monitor,
+    'ENTER DESKTOP  ↗',
+    0.95,
+    0.073,
+    [0.05, 0.479, 0.515],
+    '#e2c28d',
+    '#252930',
   );
   const screenLed = new THREE.MeshStandardMaterial({
     color: '#b5d3ab',
@@ -396,7 +413,7 @@ export function buildModels(): WorkbenchModels {
   keyboard.rotation.y = -0.035;
   root.add(keyboard);
   box(keyboard, [2.58, 0.12, 0.91], [0, 0.061, 0], edges, 0.045);
-  const keySurface = material('#26332c', 0.78);
+  const keySurface = material('#303944', 0.78);
   const keyGeometry = new RoundedBoxGeometry(0.143, 0.07, 0.126, 1, 0.009);
   const keys: { x: number; z: number; text: string }[] = [];
   const rows = ['1234567890-=←', 'QWERTYUIOP[]', 'ASDFGHJKL;↵', 'ZXCVBNM,./'];
@@ -415,7 +432,7 @@ export function buildModels(): WorkbenchModels {
   for (const x of [-1.1, -0.87, 0.53, 0.77, 1.03])
     box(keyboard, [0.19, 0.07, 0.126], [x, 0.15, 0.343], keySurface, 0.012);
   const keyLabels = texture(1024, 360, (context) => {
-    context.fillStyle = '#c0cbbc';
+    context.fillStyle = '#cdd4db';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.font = '20px monospace';
@@ -476,7 +493,7 @@ export function buildModels(): WorkbenchModels {
   agents.rotation.y = -0.12;
   root.add(agents);
   box(agents, [1.04, 0.1, 0.88], [0, 0.055, 0], dark);
-  const board = material('#3e6b58', 0.56, 0.24);
+  const board = material('#3b5b6a', 0.55, 0.22);
   box(agents, [0.85, 0.045, 0.68], [0, 0.13, 0], board, 0.01);
   box(agents, [0.4, 0.11, 0.4], [0, 0.2, 0], rubber, 0.012);
   const pins = material('#c7b47d', 0.34, 0.8);
@@ -507,7 +524,7 @@ export function buildModels(): WorkbenchModels {
       screenLed,
       0.005,
     );
-  label(agents, 'AI / AGENT', 0.74, 0.105, [0, 0.056, 0.447]);
+  label(agents, '01  AI / AGENT', 0.91, 0.105, [0, 0.056, 0.447]);
   const chipLabel = label(agents, '01', 0.22, 0.08, [0, 0.261, 0]);
   chipLabel.rotation.x = -Math.PI / 2;
   interactive(agents, 'agents');
@@ -518,7 +535,7 @@ export function buildModels(): WorkbenchModels {
   root.add(sandbox);
   box(sandbox, [1.24, 0.1, 1.14], [0, 0.055, 0], dark);
   const clear = new THREE.MeshPhysicalMaterial({
-    color: '#b3d4c2',
+    color: '#b2c8d6',
     transparent: true,
     opacity: 0.09,
     roughness: 0.15,
@@ -537,7 +554,7 @@ export function buildModels(): WorkbenchModels {
   const cage = new THREE.LineSegments(
     new THREE.EdgesGeometry(new THREE.BoxGeometry(1.03, 1.08, 0.97)),
     new THREE.LineBasicMaterial({
-      color: '#b1c9b7',
+      color: '#b6c8d7',
       transparent: true,
       opacity: 0.85,
     }),
@@ -549,7 +566,7 @@ export function buildModels(): WorkbenchModels {
   for (const x of [-0.5, 0.5])
     for (const z of [-0.47, 0.47])
       cylinder(sandbox, 0.035, 1.1, [x, 0.67, z], metal);
-  label(sandbox, 'SANDBOX', 0.85, 0.11, [0, 0.06, 0.577]);
+  label(sandbox, '02  SANDBOX', 1.04, 0.11, [0, 0.06, 0.577]);
   interactive(sandbox, 'sandbox');
 
   const infra = new THREE.Group();
@@ -590,7 +607,7 @@ export function buildModels(): WorkbenchModels {
     for (const x of [-0.5, 0.5])
       box(infra, [0.04, 0.08, 0.04], [x, y, 0.43], metal, 0.005);
   }
-  label(infra, 'AI INFRA', 0.8, 0.11, [0, 0.06, 0.48]);
+  label(infra, '03  AI INFRA', 1.04, 0.11, [0, 0.06, 0.48]);
   cable(
     infra,
     [
@@ -607,19 +624,19 @@ export function buildModels(): WorkbenchModels {
   notes.position.set(3.03, 0.03, 1.91);
   notes.rotation.y = -0.17;
   root.add(notes);
-  box(notes, [1.25, 0.035, 1.03], [0, 0, 0], material('#2f3b32'), 0.025);
+  box(notes, [1.25, 0.035, 1.03], [0, 0, 0], material('#303a46'), 0.025);
   box(notes, [1.12, 0.012, 0.89], [0, 0.027, 0.01], ivory, 0.004);
   const noteMap = texture(768, 600, (context) => {
-    context.fillStyle = '#e7e4c7';
+    context.fillStyle = '#e9e1ca';
     context.fillRect(0, 0, 768, 600);
-    context.fillStyle = '#59705a';
+    context.fillStyle = '#69717c';
     context.font = '22px monospace';
     context.fillText('QUESTIONS / 01', 55, 80);
-    context.fillStyle = '#354d39';
+    context.fillStyle = '#3d4855';
     context.font = '38px sans-serif';
     context.fillText('What should an', 55, 200);
     context.fillText('agent remember?', 55, 250);
-    context.strokeStyle = '#a5b19a';
+    context.strokeStyle = '#adb1b0';
     context.lineWidth = 2;
     for (let y = 350; y < 520; y += 47) {
       context.beginPath();
@@ -632,10 +649,11 @@ export function buildModels(): WorkbenchModels {
   });
   const paper = new THREE.Mesh(
     new THREE.PlaneGeometry(1.1, 0.87),
-    new THREE.MeshBasicMaterial({ map: noteMap, toneMapped: false }),
+    new THREE.MeshStandardMaterial({ map: noteMap, roughness: 0.94 }),
   );
   paper.rotation.x = -Math.PI / 2;
   paper.position.set(0, 0.035, 0.01);
+  paper.receiveShadow = true;
   notes.add(paper);
   box(notes, [0.35, 0.055, 0.1], [0, 0.056, -0.43], metal, 0.015);
   interactive(notes, 'notes');
@@ -653,7 +671,7 @@ export function buildModels(): WorkbenchModels {
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(0.26, 0.277, 48),
     new THREE.MeshBasicMaterial({
-      color: '#5b604e',
+      color: '#655b52',
       transparent: true,
       opacity: 0.25,
       depthWrite: false,
@@ -664,7 +682,7 @@ export function buildModels(): WorkbenchModels {
   root.add(ring);
 
   const lamp = new THREE.Group();
-  lamp.position.set(-4.02, 0, -1.81);
+  lamp.position.set(-4.02, 0, 0.4);
   root.add(lamp);
   cylinder(lamp, 0.37, 0.09, [0, 0.05, 0], dark);
   cylinder(lamp, 0.032, 1.64, [0, 0.9, 0], metal);
@@ -675,7 +693,7 @@ export function buildModels(): WorkbenchModels {
   const shade = new THREE.Mesh(
     new THREE.CylinderGeometry(0.17, 0.42, 0.33, 48, 1, true),
     new THREE.MeshStandardMaterial({
-      color: '#b9bd9e',
+      color: '#b8b5a9',
       roughness: 0.44,
       metalness: 0.38,
       side: THREE.DoubleSide,
@@ -696,31 +714,32 @@ export function buildModels(): WorkbenchModels {
   bulb.position.set(0.89, 2.07, 0);
   lamp.add(bulb);
   const lampLight = new THREE.SpotLight(
-    '#ffda9b',
-    34,
+    '#ffd09a',
+    43,
     9,
     Math.PI / 3.15,
     0.75,
     1.7,
   );
-  lampLight.position.set(-3.13, 2.03, -1.81);
-  lampLight.target.position.set(-1.8, 0, 0.3);
+  lampLight.position.set(-3.13, 2.03, 0.4);
+  lampLight.target.position.set(-0.65, 0, 1.45);
   lampLight.castShadow = true;
   lampLight.shadow.mapSize.set(1024, 1024);
   lampLight.shadow.bias = -0.0007;
   lampLight.shadow.normalBias = 0.025;
+  lampLight.shadow.radius = 3;
   root.add(lampLight, lampLight.target);
   box(lamp, [0.095, 0.04, 0.09], [0.16, 0.115, 0.12], rubber, 0.015);
   cable(root, [
-    [-4.1, 0.03, -1.86],
-    [-4.7, 0.02, -2.1],
-    [-4.5, 0.01, -2.8],
+    [-4.1, 0.03, 0.35],
+    [-4.7, 0.02, 0.1],
+    [-4.85, 0.01, -2.8],
     [-4.4, -0.6, -3.05],
   ]);
   interactive(lamp, 'lamp');
 
-  const hemisphere = new THREE.HemisphereLight('#bed4cd', '#514634', 1.9);
-  const key = new THREE.DirectionalLight('#d7e3d3', 2.15);
+  const hemisphere = new THREE.HemisphereLight('#b8c5dd', '#45404a', 1.8);
+  const key = new THREE.DirectionalLight('#d8e1ee', 2.15);
   key.position.set(1.5, 7, 4.5);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
@@ -733,9 +752,9 @@ export function buildModels(): WorkbenchModels {
   key.shadow.bias = -0.0004;
   key.shadow.normalBias = 0.03;
   key.shadow.radius = 3;
-  const cool = new THREE.PointLight('#96bec5', 14, 14, 2);
+  const cool = new THREE.PointLight('#9bb5e0', 9, 14, 2);
   cool.position.set(3.5, 3, -3.1);
-  const screenLight = new THREE.PointLight('#b4d6bb', 0.9, 3, 1.8);
+  const screenLight = new THREE.PointLight('#d4e0ee', 1.2, 3, 1.8);
   screenLight.position.set(-1.25, 1.45, 0.3);
   root.add(hemisphere, key, cool, screenLight);
 
@@ -743,8 +762,14 @@ export function buildModels(): WorkbenchModels {
     root,
     pickables,
     screenCenter: new THREE.Vector3(-1.25, 1.42, -0.01),
+    anchors: [
+      { target: 'desktop', position: new THREE.Vector3(-1.25, 2.52, 0.42) },
+      { target: 'agents', position: new THREE.Vector3(1.54, 0.58, 1.0) },
+      { target: 'sandbox', position: new THREE.Vector3(3.1, 1.48, 0.05) },
+      { target: 'infra', position: new THREE.Vector3(1.52, 1.65, -1.04) },
+    ],
     setLamp(on) {
-      lampLight.intensity = on ? 34 : 0;
+      lampLight.intensity = on ? 43 : 0;
       bulbSurface.emissiveIntensity = on ? 1.5 : 0;
       bulbSurface.color.set(on ? '#f4dcac' : '#8c8c74');
     },
@@ -752,7 +777,7 @@ export function buildModels(): WorkbenchModels {
       for (const [name, surfaces] of highlights)
         for (const surface of surfaces) {
           if (surface === bulbSurface || surface === screenLed) continue;
-          surface.emissive.set(name === target ? '#92bea6' : '#000000');
+          surface.emissive.set(name === target ? '#a5bdd3' : '#000000');
           surface.emissiveIntensity = name === target ? 0.13 : 0;
         }
     },
