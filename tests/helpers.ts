@@ -11,7 +11,7 @@ export const test = base.extend<{ runtimeErrors: void }>({
       await use();
       expect(
         errors,
-        'The desktop must not throw unhandled browser errors.',
+        'The application must not throw unhandled browser errors.',
       ).toEqual([]);
     },
     { auto: true },
@@ -49,7 +49,7 @@ export async function expectWithinWidth(control: Locator, width: number) {
 }
 
 export async function boot(page: Page) {
-  await page.goto('/');
+  await page.goto('/#desktop');
   await expect(dock(page)).toBeVisible();
   await expect(mainWindow(page)).toBeVisible();
   await page.evaluate(async () => {

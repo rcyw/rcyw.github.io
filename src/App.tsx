@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import {
+  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   Bot,
@@ -49,7 +50,19 @@ function initialState(): DesktopState {
   }
 }
 
-export default function App() {
+export interface DesktopEntry {
+  sequence: number;
+  app: AppId;
+  topic?: TopicId;
+}
+
+interface DesktopProps {
+  active?: boolean;
+  entry?: DesktopEntry;
+  onReturn?: () => void;
+}
+
+export default function App({ active = true, entry, onReturn }: DesktopProps) {
   const [state, setState] = useState<DesktopState>(initialState);
   const [activeWindow, setActiveWindow] = useState<'main' | 'notes' | null>(
     state.minimized ? (state.noteVisible ? 'notes' : null) : 'main',
@@ -58,6 +71,9 @@ export default function App() {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [announcement, setAnnouncement] = useState('');
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const handledEntry = useRef<number | undefined>(undefined);
   const mainWindow = useRef<HTMLElement>(null);
   const noteWindow = useRef<HTMLElement>(null);
   const workspace = useRef<HTMLDivElement>(null);
@@ -105,6 +121,7 @@ export default function App() {
 
   function focusApp(app: AppId) {
     requestAnimationFrame(() => {
+      if (!activeRef.current) return;
       const element = app === 'notes' ? noteWindow.current : mainWindow.current;
       if (app === 'terminal')
         element
@@ -145,6 +162,29 @@ export default function App() {
     setActiveWindow('main');
     focusApp('interests');
   }
+
+  useEffect(() => {
+    if (!active) return;
+    if (entry && handledEntry.current !== entry.sequence) {
+      handledEntry.current = entry.sequence;
+      if (entry.topic) openTopic(entry.topic);
+      else openApp(entry.app);
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      if (!activeRef.current) return;
+      if (state.minimized) {
+        dock.current
+          ?.querySelector<HTMLButtonElement>(`[data-app="${state.view}"]`)
+          ?.focus({ preventScroll: true });
+      } else if (state.folded) {
+        mainWindow.current?.focus({ preventScroll: true });
+      } else {
+        focusApp(state.view);
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [active, entry]);
 
   function closeNote() {
     setState((current) => ({ ...current, noteVisible: false }));
@@ -240,6 +280,12 @@ export default function App() {
           <span className="system-owner">Wayne's desk</span>
         </div>
         <div className="system-right">
+          {onReturn && (
+            <button type="button" className="wb-return" onClick={onReturn}>
+              <ArrowLeft size={13} aria-hidden="true" />
+              Back to workbench
+            </button>
+          )}
           <span className="desktop-presence">
             <span aria-hidden="true" />
             Curiosity: on
@@ -459,6 +505,7 @@ export default function App() {
                     onOpen={openApp}
                     onTopic={openTopic}
                     active={
+                      active &&
                       state.view === 'terminal' &&
                       !state.folded &&
                       !state.minimized
