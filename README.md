@@ -44,6 +44,14 @@ Push to `main` to run `.github/workflows/pages.yml`. It installs the locked depe
 
 GitHub Pages uses the **GitHub Actions** build source. The root URL is `https://rcyw.github.io/`, so Vite uses `/` as its base. The profile README is maintained separately in [rcyw/rcyw](https://github.com/rcyw/rcyw).
 
+### Desk release
+
+[Desk](https://github.com/rcyw/desk) owns the Astro source and articles. The [Desk Pages workflow](.github/workflows/desk-pages.yml) builds the current Desk `main` after a successful push CI run for the same commit. A pull request or a manual run with `publish=false` prepares a Pages artifact for review.
+
+After approving the first article preview, set this repository's `PAGES_SOURCE` variable to `desk` and run **Desk Pages** on `main` with the verified Desk SHA and `publish=true`. The deployment checks the revision served at `/desk-revision.txt`. To restore the workbench, remove `PAGES_SOURCE` and run **Publish curiosity desktop** on `main` after any current deployment finishes.
+
+For automatic updates, configure Desk's `pages-dispatch` environment for `main` and add its `PAGES_DISPATCH_TOKEN` secret with Actions write access limited to this repository. Set Desk's `PAGES_AUTO_PUBLISH` variable to `true`. The next successful Desk push CI run dispatches **Desk Pages** for that revision.
+
 DM Sans and IBM Plex Mono are served with the site. Their SIL Open Font License notices and Three.js's MIT license are in `public/licenses/`.
 
 This is a personal site inspired by NeXTSTEP's visual language, with original interface assets. It is not affiliated with NeXT or Apple.
