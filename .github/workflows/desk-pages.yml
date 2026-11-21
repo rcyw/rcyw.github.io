@@ -50,12 +50,26 @@ jobs:
           DESK_SHA: ${{ steps.source.outputs.sha }}
         shell: bash
         run: |
-          curl --fail --silent --show-error --max-time 20 --retry 3 --get \
-            https://api.github.com/repos/rcyw/desk/actions/workflows/ci.yml/runs \
-            --data-urlencode branch=main --data-urlencode event=push \
-            --data-urlencode "head_sha=$DESK_SHA" \
-            --data-urlencode status=success --data-urlencode per_page=1 |
-            jq -e --arg sha "$DESK_SHA" 'any(.workflow_runs[]; .head_sha == $sha and .conclusion == "success")'
+          # The public run listing can lag behind the CI completion event.
+          max_attempts=7
+          for ((attempt = 1; attempt <= max_attempts; attempt++)); do
+            if curl --fail --silent --show-error --max-time 10 --get \
+              --header 'Cache-Control: no-cache' \
+              https://api.github.com/repos/rcyw/desk/actions/workflows/ci.yml/runs \
+              --data-urlencode branch=main --data-urlencode event=push \
+              --data-urlencode "head_sha=$DESK_SHA" \
+              --data-urlencode status=success --data-urlencode per_page=1 |
+              jq -e --arg sha "$DESK_SHA" 'any(.workflow_runs[]; .head_sha == $sha and .conclusion == "success")' >/dev/null; then
+              echo "Verified successful Desk CI for $DESK_SHA."
+              exit 0
+            fi
+            if ((attempt < max_attempts)); then
+              echo "Waiting for successful Desk CI for $DESK_SHA ($attempt/$max_attempts). Retrying in 15 seconds."
+              sleep 15
+            fi
+          done
+          echo "::error::No successful Desk CI run found for $DESK_SHA after $max_attempts attempts."
+          exit 1
       - uses: pnpm/action-setup@v6.1.1
       - uses: actions/setup-node@v7.1.0
         with:
