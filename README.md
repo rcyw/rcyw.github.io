@@ -1,18 +1,30 @@
-# Wayne's desk
+# Wayne’s Desk on GitHub Pages
 
-A small desk. A lot of questions. A NeXTSTEP-inspired personal corner for **AI / Agent**, **Agent Sandbox**, and **AI Infra**.
+Wayne’s Desk is a personal site about AI agents and infrastructure. It opens **Wayne’s Notes** for articles and topics, with **AI Brief** and **Papers** alongside it. This repository handles GitHub Pages releases and keeps the original NeXTSTEP workbench as a fallback. [Visit Wayne’s Desk](https://rcyw.github.io/) · [Desk source and content](https://github.com/rcyw/desk)
 
-[Explore the workbench](https://rcyw.github.io/)
+## Publication
 
-The front door is a NeXTSTEP-inspired research desk after hours: a bright CRT, charcoal hardware, and a warm pool of lamplight. Look around, switch the lamp, and pick a numbered object: the display opens the desktop, while three small machines lead to AI / Agent, Agent Sandbox, and AI Infra. Physical nameplates match the compact navigation below; hovering an object reveals a quiet hint. The desktop has interest drawers, open questions, and a playful Terminal. Returning to the workbench preserves the current desktop and unfinished Terminal input.
+This repository uses GitHub Actions as its Pages build source.
 
-[Enter the desktop directly](https://rcyw.github.io/#desktop). The direct link skips the 3D renderer. A static illustration keeps all content accessible when WebGL is unavailable; reduced-motion preferences skip the camera transition. The desktop and each interest also have keyboard-accessible buttons.
+### Desk release
 
-This is a static React, TypeScript, and Three.js site. Terminal commands run entirely in the browser. There is no backend, analytics, or account system. Desk preferences stay in this browser's local storage.
+Desk’s `main` supplies the live site. Once push CI succeeds for its current commit, Desk dispatches **Desk Pages** with the verified commit SHA. The workflow checks the successful CI record for that SHA and builds the revision. It checks Desk’s current commit again before deploying and verifies the live revision afterward. [Desk Pages workflow](.github/workflows/desk-pages.yml) · [Live Desk revision](https://rcyw.github.io/desk-revision.txt)
 
-## Local development
+Pull requests to `main` that change either Pages workflow build an artifact for review. To run **Desk Pages** manually, select this repository’s `main`, enter the current Desk `main` SHA in `desk_sha`, and choose `publish=false` for a preview or `publish=true` for a live release.
 
-Use Node.js 24.16.0 and pnpm 12.11.2 (versions are recorded in this repository).
+Set `PAGES_SOURCE` to `desk` in this repository to enable live Desk releases. For automatic dispatches, configure Desk’s `pages-dispatch` environment for `main` with a `PAGES_DISPATCH_TOKEN` secret that has Actions write access to this repository. Set `PAGES_AUTO_PUBLISH` to `true` in Desk. [Desk dispatch workflow](https://github.com/rcyw/desk/blob/main/.github/workflows/dispatch-pages.yml)
+
+## NeXTSTEP workbench fallback
+
+The original workbench is a NeXTSTEP-inspired research desk after hours, with a bright CRT, charcoal hardware, and a warm pool of lamplight. The display opens the desktop, while three small machines lead to AI / Agent, Agent Sandbox, and AI Infra. The desktop has interest drawers, open questions, and a browser-based Terminal. Returning to the workbench preserves the current desktop and unfinished Terminal input.
+
+### Restore the workbench
+
+After any current deployment finishes, remove `PAGES_SOURCE` and run **Publish curiosity desktop** on this repository’s `main`. Pushes to `main` also build and publish the workbench while it is selected. The workflow checks types and formatting, builds the site, and runs Chromium interaction tests before publishing `dist/`. To return to Desk, set `PAGES_SOURCE` back to `desk` and run a manual production release. [Workbench Pages workflow](.github/workflows/pages.yml) · [Desk release](#desk-release)
+
+### Local development
+
+Use the Node.js and pnpm versions recorded in this repository. [Node.js version](.node-version) · [pnpm version](package.json)
 
 ```sh
 pnpm install --frozen-lockfile
@@ -21,11 +33,13 @@ pnpm dev
 
 Edit `src/content.ts` for the desktop introduction, interests, and questions. `src/Workstation.tsx` connects the workbench and desktop; `src/workbench.css` styles the entry page. The original 3D models and renderer live in `src/scene/`. The desktop interaction lives in `src/App.tsx`; its appearance lives in `src/styles.css`.
 
-`/#workbench` and `/#desktop` support direct visits, refresh, and browser history on GitHub Pages. The renderer loads separately when entering the workbench, caps pixel density, pauses on hidden tabs, and releases its resources when entering the desktop. Models, material textures, and the fallback illustration are generated from code; no remote model or texture service is needed.
+In the workbench build, `/#workbench` and `/#desktop` support direct visits, refresh, and browser history. The desktop route skips the 3D renderer. A static illustration keeps the content accessible without WebGL, and reduced-motion preferences skip the camera transition.
+
+The React, TypeScript, and Three.js workbench runs in the browser. The renderer loads separately when entering the workbench, caps pixel density, pauses on hidden tabs, and releases its resources when entering the desktop. Models, material textures, and the fallback illustration are generated from code. Preferences stay in browser local storage. Vite uses `/` as its base for GitHub Pages.
 
 The camera frames the working surface independently on narrow screens. HTML markers follow projected 3D anchor points and appear individually on keyboard focus. They do not intercept pointer input; mouse and touch visitors select the actual objects. The plain navigation remains available in the static fallback. Anchor positions and material details live in `src/scene/models.ts`, camera framing in `src/scene/workbenchScene.ts`, and the surrounding layout in `src/workbench.css`.
 
-## Verification
+### Verification
 
 ```sh
 pnpm check
@@ -38,22 +52,8 @@ Browser tests run against the production build in Chromium, Firefox, WebKit, and
 
 Use `pnpm format` after editing. To preview the build manually, run `pnpm preview`.
 
-## Publication
+### Credits
 
-Push to `main` to run `.github/workflows/pages.yml`. It installs the locked dependencies, checks types and formatting, builds the site, and runs the Chromium interaction tests before publishing `dist/` to GitHub Pages. The full browser matrix can be run locally with the commands above.
-
-GitHub Pages uses the **GitHub Actions** build source. The root URL is `https://rcyw.github.io/`, so Vite uses `/` as its base. The profile README is maintained separately in [rcyw/rcyw](https://github.com/rcyw/rcyw).
-
-### Desk release
-
-[Desk](https://github.com/rcyw/desk) owns the Astro source and articles. The [Desk Pages workflow](.github/workflows/desk-pages.yml) builds the current Desk `main` after a successful push CI run for the same commit. A pull request or a manual run with `publish=false` prepares a Pages artifact for review.
-
-After approving the first article preview, set this repository's `PAGES_SOURCE` variable to `desk` and run **Desk Pages** on `main` with the verified Desk SHA and `publish=true`. The deployment checks the revision served at `/desk-revision.txt`. To restore the workbench, remove `PAGES_SOURCE` and run **Publish curiosity desktop** on `main` after any current deployment finishes.
-
-For automatic updates, configure Desk's `pages-dispatch` environment for `main` and add its `PAGES_DISPATCH_TOKEN` secret with Actions write access limited to this repository. Set Desk's `PAGES_AUTO_PUBLISH` variable to `true`. The next successful Desk push CI run dispatches **Desk Pages** for that revision.
-
-DM Sans and IBM Plex Mono are served with the site. Their SIL Open Font License notices and Three.js's MIT license are in `public/licenses/`.
-
-This is a personal site inspired by NeXTSTEP's visual language, with original interface assets. It is not affiliated with NeXT or Apple.
+The workbench is an independent project with original interface assets inspired by NeXTSTEP’s visual language. The SIL Open Font License notices for DM Sans and IBM Plex Mono and the MIT license for Three.js are in the repository. [Third-party licenses](public/licenses/)
 
 The idea of exploring a personal site through objects in a room was inspired by [Felix Rieseberg’s website](https://felixrieseberg.com/). This workbench uses its own models, visual design, and interest-focused content.
